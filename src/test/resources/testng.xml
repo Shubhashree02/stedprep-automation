@@ -1,0 +1,11 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="StedPrep Automation Suite">
+
+    <test name="All Tests">
+        <classes>
+           <!-- <class name="com.stedprep.automation.tests.SampleTest"/> -->
+            <class name="com.stedprep.automation.tests.ParentRegistrationTest"/>
+        </classes>
+    </test>
+
+</suite>
