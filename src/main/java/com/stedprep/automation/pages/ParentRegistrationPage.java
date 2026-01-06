@@ -3,10 +3,16 @@ package com.stedprep.automation.pages;
 import com.stedprep.automation.config.ConfigReader;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.WindowType;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ParentRegistrationPage {
 
@@ -15,7 +21,7 @@ public class ParentRegistrationPage {
 
     public ParentRegistrationPage(WebDriver driver) {
         this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     }
 
     // =======================
@@ -26,12 +32,11 @@ public class ParentRegistrationPage {
                 ConfigReader.get("base.url")
                         + ConfigReader.get("parent.register.path")
         );
-
         wait.until(ExpectedConditions.visibilityOfElementLocated(firstName));
     }
 
     // =======================
-    // Locators (LABEL-BASED — FIX)
+    // STEP 1 LOCATORS (UNCHANGED)
     // =======================
     private By firstName =
             By.xpath("//label[text()='First Name']/following::input[1]");
@@ -55,7 +60,23 @@ public class ParentRegistrationPage {
             By.xpath("//button[@type='submit']");
 
     // =======================
-    // Actions (NORMAL sendKeys)
+    // OTP LOCATORS
+    // =======================
+    private By otpInputs =
+            By.xpath("//input[@maxlength='1' and @inputmode='numeric']");
+
+    private By verifyButton =
+            By.xpath("//button[.//span[text()='Verify']]");
+
+    // =======================
+    // YOPMAIL LOCATORS
+    // =======================
+    private By yopmailInput = By.id("login");
+    private By yopmailCheckBtn = By.id("refreshbut");
+    private By mailFrame = By.id("ifmail");
+
+    // =======================
+    // COMMON ACTION
     // =======================
     public void type(By locator, String value) {
         wait.until(ExpectedConditions.elementToBeClickable(locator));
@@ -70,7 +91,7 @@ public class ParentRegistrationPage {
     }
 
     // =======================
-    // Composite Action
+    // STEP 1 – REGISTRATION
     // =======================
     public void fillParentStepOne(
             String fName,
@@ -86,5 +107,76 @@ public class ParentRegistrationPage {
         type(confirmPassword, pwd);
         type(phoneNumber, phone);
         clickContinue();
+    }
+
+    // =======================
+    // STEP 2 – FULL OTP FLOW
+    // =======================
+    public void verifyOtpFromYopmail(String emailValue) {
+
+        // store app window
+        String appWindow = driver.getWindowHandle();
+
+        // open new tab
+        driver.switchTo().newWindow(WindowType.TAB);
+        driver.get("https://yopmail.com");
+
+        // open inbox
+        String inbox = emailValue.split("@")[0];
+        wait.until(ExpectedConditions.visibilityOfElementLocated(yopmailInput))
+                .sendKeys(inbox);
+        driver.findElement(yopmailCheckBtn).click();
+
+        // switch to email iframe
+        wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(mailFrame));
+
+        // read mail text
+        String mailText = driver.findElement(By.tagName("body")).getText();
+
+        // extract 6-digit OTP
+        Pattern pattern = Pattern.compile("\\b\\d{6}\\b");
+        Matcher matcher = pattern.matcher(mailText);
+
+        if (!matcher.find()) {
+            throw new RuntimeException("OTP not found in Yopmail inbox");
+        }
+
+        String otp = matcher.group();
+
+        // close yopmail tab
+        driver.switchTo().defaultContent();
+        Set<String> windows = driver.getWindowHandles();
+        for (String w : windows) {
+            if (!w.equals(appWindow)) {
+                driver.switchTo().window(w).close();
+            }
+        }
+
+        // back to app
+        driver.switchTo().window(appWindow);
+
+        // enter OTP
+        enterOtp(otp);
+        clickVerify();
+    }
+
+    // =======================
+    // OTP ENTRY
+    // =======================
+    private void enterOtp(String otp) {
+
+        wait.until(ExpectedConditions.numberOfElementsToBe(otpInputs, 6));
+
+        List<WebElement> boxes = driver.findElements(otpInputs);
+
+        for (int i = 0; i < otp.length(); i++) {
+            boxes.get(i).clear();
+            boxes.get(i).sendKeys(String.valueOf(otp.charAt(i)));
+        }
+    }
+
+    private void clickVerify() {
+        wait.until(ExpectedConditions.elementToBeClickable(verifyButton));
+        driver.findElement(verifyButton).click();
     }
 }

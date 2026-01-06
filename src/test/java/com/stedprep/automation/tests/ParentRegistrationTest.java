@@ -8,20 +8,27 @@ import org.testng.annotations.Test;
 public class ParentRegistrationTest extends BaseTest {
 
     @Test
-    public void verifyParentRegistrationStepOne() {
+    public void verifyParentRegistrationWithOtp() {
 
         ParentRegistrationPage registrationPage =
                 new ParentRegistrationPage(driver);
 
-        // 🔥 REQUIRED CHANGE
+        // Step 0: Open registration page
         registrationPage.open();
 
+        // 🔥 Generate UNIQUE email ONCE (new every run)
+        String email = TestDataUtils.generateEmail();
+
+        // Step 1: Fill parent registration details
         registrationPage.fillParentStepOne(
                 TestDataUtils.generateFirstName(),
                 TestDataUtils.generateLastName(),
-                TestDataUtils.generateEmail(),
+                email, // SAME email used later for OTP
                 TestDataUtils.generatePassword(),
                 TestDataUtils.generatePhone()
         );
+
+        // Step 2: Fetch OTP from Yopmail and verify
+        registrationPage.verifyOtpFromYopmail(email);
     }
 }
