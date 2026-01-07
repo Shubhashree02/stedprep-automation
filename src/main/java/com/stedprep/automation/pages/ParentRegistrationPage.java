@@ -1,16 +1,12 @@
 package com.stedprep.automation.pages;
 
 import com.stedprep.automation.config.ConfigReader;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.WindowType;
+import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,10 +14,12 @@ public class ParentRegistrationPage {
 
     private WebDriver driver;
     private WebDriverWait wait;
+    private JavascriptExecutor js;
 
     public ParentRegistrationPage(WebDriver driver) {
         this.driver = driver;
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+        this.js = (JavascriptExecutor) driver;
     }
 
     // =======================
@@ -36,62 +34,84 @@ public class ParentRegistrationPage {
     }
 
     // =======================
-    // STEP 1 LOCATORS (UNCHANGED)
+    // STEP 1 – PARENT INFO
     // =======================
     private By firstName =
             By.xpath("//label[text()='First Name']/following::input[1]");
-
     private By lastName =
             By.xpath("//label[text()='Last Name']/following::input[1]");
-
     private By email =
             By.xpath("//label[text()='Email']/following::input[1]");
-
     private By password =
             By.xpath("//label[text()='Password']/following::input[1]");
-
     private By confirmPassword =
             By.xpath("//label[text()='Confirm Password']/following::input[1]");
-
     private By phoneNumber =
             By.xpath("//input[@placeholder='Enter your phone number (optional)']");
-
     private By continueButton =
             By.xpath("//button[@type='submit']");
 
     // =======================
-    // OTP LOCATORS
+    // STEP 2 – OTP
     // =======================
     private By otpInputs =
             By.xpath("//input[@maxlength='1' and @inputmode='numeric']");
-
     private By verifyButton =
             By.xpath("//button[.//span[text()='Verify']]");
 
-    // =======================
-    // YOPMAIL LOCATORS
-    // =======================
+    // Yopmail
     private By yopmailInput = By.id("login");
     private By yopmailCheckBtn = By.id("refreshbut");
     private By mailFrame = By.id("ifmail");
 
     // =======================
-    // COMMON ACTION
+    // STEP 3 – STUDENT INFO
     // =======================
-    public void type(By locator, String value) {
-        wait.until(ExpectedConditions.elementToBeClickable(locator));
-        driver.findElement(locator).click();
-        driver.findElement(locator).clear();
-        driver.findElement(locator).sendKeys(value);
+    private By city =
+            By.xpath("//label[text()='City']/following::input[1]");
+    private By zipCode =
+            By.xpath("//label[text()='ZIP Code']/following::input[1]");
+
+    private By studentFirstName =
+            By.id("Student information_students_0_firstName");
+    private By studentLastName =
+            By.id("Student information_students_0_lastName");
+    private By studentEmail =
+            By.id("Student information_students_0_email");
+
+    private By iseeTestDate =
+            By.id("Student information_students_0_iseeTestDate");
+
+    private By calendarDate =
+            By.xpath("//td[contains(@class,'ant-picker-cell') and not(contains(@class,'disabled'))]");
+
+    // Grade (Ant Design)
+    private By gradeSelector =
+            By.xpath("//input[@id='Student information_students_0_currentGrade']/ancestor::div[contains(@class,'ant-select-selector')]");
+
+    // Checkboxes (UPDATED – FINAL)
+    private By privacyCheckbox =
+            By.id("Student information_privacyRefundAgreement");
+
+    private By termsCheckbox =
+            By.id("Student information_termsAgreement");
+
+    // Submit
+    private By submitAndFinishBtn =
+            By.xpath("//button[.//span[text()='Submit & Finish']]");
+
+    // =======================
+    // COMMON TYPE
+    // =======================
+    private void type(By locator, String value) {
+        WebElement el = wait.until(ExpectedConditions.elementToBeClickable(locator));
+        el.click();
+        el.clear();
+        el.sendKeys(value);
     }
 
-    public void clickContinue() {
-        wait.until(ExpectedConditions.elementToBeClickable(continueButton));
-        driver.findElement(continueButton).click();
-    }
-
     // =======================
-    // STEP 1 – REGISTRATION
+    // STEP 1
     // =======================
     public void fillParentStepOne(
             String fName,
@@ -106,77 +126,116 @@ public class ParentRegistrationPage {
         type(password, pwd);
         type(confirmPassword, pwd);
         type(phoneNumber, phone);
-        clickContinue();
+        driver.findElement(continueButton).click();
     }
 
     // =======================
-    // STEP 2 – FULL OTP FLOW
+    // STEP 2 – OTP
     // =======================
     public void verifyOtpFromYopmail(String emailValue) {
 
-        // store app window
         String appWindow = driver.getWindowHandle();
+        String inbox = emailValue.split("@")[0];
 
-        // open new tab
         driver.switchTo().newWindow(WindowType.TAB);
         driver.get("https://yopmail.com");
 
-        // open inbox
-        String inbox = emailValue.split("@")[0];
         wait.until(ExpectedConditions.visibilityOfElementLocated(yopmailInput))
                 .sendKeys(inbox);
         driver.findElement(yopmailCheckBtn).click();
 
-        // switch to email iframe
-        wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(mailFrame));
+        String otp = null;
 
-        // read mail text
-        String mailText = driver.findElement(By.tagName("body")).getText();
+        for (int i = 0; i < 5; i++) {
+            try {
+                wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(mailFrame));
+                String text = driver.findElement(By.tagName("body")).getText();
+                Matcher m = Pattern.compile("\\b\\d{6}\\b").matcher(text);
+                if (m.find()) {
+                    otp = m.group();
+                    break;
+                }
+            } catch (Exception ignored) {
+            } finally {
+                driver.switchTo().defaultContent();
+            }
 
-        // extract 6-digit OTP
-        Pattern pattern = Pattern.compile("\\b\\d{6}\\b");
-        Matcher matcher = pattern.matcher(mailText);
-
-        if (!matcher.find()) {
-            throw new RuntimeException("OTP not found in Yopmail inbox");
+            try { Thread.sleep(4000); } catch (InterruptedException ignored) {}
+            driver.findElement(yopmailCheckBtn).click();
         }
 
-        String otp = matcher.group();
+        if (otp == null) {
+            throw new RuntimeException("OTP not received from Yopmail");
+        }
 
-        // close yopmail tab
-        driver.switchTo().defaultContent();
-        Set<String> windows = driver.getWindowHandles();
-        for (String w : windows) {
+        for (String w : driver.getWindowHandles()) {
             if (!w.equals(appWindow)) {
                 driver.switchTo().window(w).close();
             }
         }
-
-        // back to app
         driver.switchTo().window(appWindow);
 
-        // enter OTP
-        enterOtp(otp);
-        clickVerify();
-    }
-
-    // =======================
-    // OTP ENTRY
-    // =======================
-    private void enterOtp(String otp) {
-
-        wait.until(ExpectedConditions.numberOfElementsToBe(otpInputs, 6));
-
-        List<WebElement> boxes = driver.findElements(otpInputs);
+        List<WebElement> boxes =
+                wait.until(ExpectedConditions.numberOfElementsToBe(otpInputs, 6));
 
         for (int i = 0; i < otp.length(); i++) {
-            boxes.get(i).clear();
             boxes.get(i).sendKeys(String.valueOf(otp.charAt(i)));
         }
+
+        wait.until(ExpectedConditions.elementToBeClickable(verifyButton)).click();
     }
 
-    private void clickVerify() {
-        wait.until(ExpectedConditions.elementToBeClickable(verifyButton));
-        driver.findElement(verifyButton).click();
+    // =======================
+    // STEP 3 – STUDENT (FINAL FIX)
+    // =======================
+    public void fillStudentStepThree() {
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(city));
+
+        type(city, "Chicago");
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//div[contains(@class,'ant-select-item-option')]")
+        )).click();
+
+        type(zipCode, "60601");
+
+        // DO NOT REMOVE
+        type(studentFirstName, "Alex");
+        type(studentLastName, "Smith");
+        type(studentEmail, "stedprep_test@yopmail.com");
+
+        js.executeScript("window.scrollBy(0,400);");
+
+        // ---------- ISEE TEST DATE ----------
+        WebElement testDate =
+                wait.until(ExpectedConditions.elementToBeClickable(iseeTestDate));
+        testDate.click();
+        wait.until(ExpectedConditions.elementToBeClickable(calendarDate)).click();
+
+        // ---------- GRADE (ANT DESIGN – CORRECT WAY) ----------
+        WebElement selector =
+                wait.until(ExpectedConditions.elementToBeClickable(gradeSelector));
+
+        js.executeScript("arguments[0].click();", selector);
+
+        try { Thread.sleep(500); } catch (InterruptedException ignored) {}
+
+        // KEY FIX: send keys to active element
+        WebElement activeInput = driver.switchTo().activeElement();
+        activeInput.sendKeys(Keys.ARROW_DOWN);
+        activeInput.sendKeys(Keys.ENTER);
+// ---------- CHECKBOXES (FINAL & SAFE) ----------
+        WebElement privacy =
+                wait.until(ExpectedConditions.presenceOfElementLocated(privacyCheckbox));
+        js.executeScript("arguments[0].click();", privacy);
+
+        WebElement terms =
+                wait.until(ExpectedConditions.presenceOfElementLocated(termsCheckbox));
+        js.executeScript("arguments[0].click();", terms);
+
+        // ---------- SUBMIT ----------
+        WebElement submit =
+                wait.until(ExpectedConditions.elementToBeClickable(submitAndFinishBtn));
+        js.executeScript("arguments[0].click();", submit);
     }
 }
