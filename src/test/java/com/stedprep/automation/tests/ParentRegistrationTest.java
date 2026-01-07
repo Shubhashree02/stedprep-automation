@@ -8,27 +8,36 @@ import org.testng.annotations.Test;
 public class ParentRegistrationTest extends BaseTest {
 
     @Test
-    public void verifyParentRegistrationWithOtp() {
+    public void verifyCompleteParentRegistrationFlow() {
 
         ParentRegistrationPage registrationPage =
                 new ParentRegistrationPage(driver);
 
-        // Step 0: Open registration page
+        // 🔹 Generate data ONCE
+        String firstName = TestDataUtils.generateFirstName();
+        String lastName = TestDataUtils.generateLastName();
+        String email = TestDataUtils.generateEmail();   // SAME email used for OTP
+        String password = TestDataUtils.generatePassword();
+        String phone = TestDataUtils.generatePhone();
+
+        // 🔹 Step 0 – Open Registration Page
         registrationPage.open();
 
-        // 🔥 Generate UNIQUE email ONCE (new every run)
-        String email = TestDataUtils.generateEmail();
-
-        // Step 1: Fill parent registration details
+        // 🔹 Step 1 – Parent Information
         registrationPage.fillParentStepOne(
-                TestDataUtils.generateFirstName(),
-                TestDataUtils.generateLastName(),
-                email, // SAME email used later for OTP
-                TestDataUtils.generatePassword(),
-                TestDataUtils.generatePhone()
+                firstName,
+                lastName,
+                email,
+                password,
+                phone
         );
 
-        // Step 2: Fetch OTP from Yopmail and verify
+        // 🔹 Step 2 – OTP Verification (Yopmail)
         registrationPage.verifyOtpFromYopmail(email);
+
+        // 🔹 Step 3 – Student Information
+        registrationPage.fillStudentStepThree();
+
+        // ✅ Flow ends at Submit & Finish
     }
 }
