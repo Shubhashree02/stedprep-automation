@@ -27,6 +27,7 @@ public class TestDataUtils {
     public static String generateEmail() {
         return "parent_" + System.currentTimeMillis() + "@yopmail.com";
     }
+    public static String generateStudentEmail() {return "student_" + System.currentTimeMillis() + "@yopmail.com";}
 
     public static String generatePhone() {
         return "947" + (int)(1000000 + Math.random() * 9000000);
