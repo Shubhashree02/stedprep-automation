@@ -1,10 +1,13 @@
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
-<suite name="StedPrep Automation Suite">
+<suite name="StedPrep Automation Suite" verbose="1">
 
-    <test name="All Tests">
+    <test name="End to End Flow">
         <classes>
-           <!-- <class name="com.stedprep.automation.tests.SampleTest"/> -->
+            <!-- STEP 1: Parent Registration -->
             <class name="com.stedprep.automation.tests.ParentRegistrationTest"/>
+
+            <!-- STEP 2: Student Login -->
+            <class name="com.stedprep.automation.tests.StudentLoginTest"/>
         </classes>
     </test>
 

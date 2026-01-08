@@ -63,6 +63,7 @@ public class ParentRegistrationPage {
     private By yopmailInput = By.id("login");
     private By yopmailCheckBtn = By.id("refreshbut");
     private By mailFrame = By.id("ifmail");
+//    private By refreshBtn = By.id("refreshbut");
 
     // =======================
     // STEP 3 – STUDENT INFO
@@ -144,6 +145,8 @@ public class ParentRegistrationPage {
                 .sendKeys(inbox);
         driver.findElement(yopmailCheckBtn).click();
 
+//        driver.findElement(refreshBtn).click();
+
         String otp = null;
 
         for (int i = 0; i < 5; i++) {
@@ -188,7 +191,7 @@ public class ParentRegistrationPage {
     // =======================
     // STEP 3 – STUDENT (FINAL FIX)
     // =======================
-    public void fillStudentStepThree() {
+    public void fillStudentStepThree(String studentEmailValue) {
 
         wait.until(ExpectedConditions.visibilityOfElementLocated(city));
 
@@ -202,7 +205,7 @@ public class ParentRegistrationPage {
         // DO NOT REMOVE
         type(studentFirstName, "Alex");
         type(studentLastName, "Smith");
-        type(studentEmail, "stedprep_test@yopmail.com");
+        type(studentEmail, studentEmailValue);
 
         js.executeScript("window.scrollBy(0,400);");
 

@@ -4,6 +4,9 @@ import com.stedprep.automation.base.BaseTest;
 import com.stedprep.automation.pages.ParentRegistrationPage;
 import com.stedprep.automation.utils.TestDataUtils;
 import org.testng.annotations.Test;
+import com.stedprep.automation.pages.YopmailPage;
+import com.stedprep.automation.utils.StudentCredentialStore;
+
 
 public class ParentRegistrationTest extends BaseTest {
 
@@ -16,7 +19,10 @@ public class ParentRegistrationTest extends BaseTest {
         // 🔹 Generate data ONCE
         String firstName = TestDataUtils.generateFirstName();
         String lastName = TestDataUtils.generateLastName();
-        String email = TestDataUtils.generateEmail();   // SAME email used for OTP
+
+        String parentEmail = TestDataUtils.generateEmail();          // OTP email
+        String studentEmail = TestDataUtils.generateStudentEmail(); // ✅ NEW
+
         String password = TestDataUtils.generatePassword();
         String phone = TestDataUtils.generatePhone();
 
@@ -27,17 +33,25 @@ public class ParentRegistrationTest extends BaseTest {
         registrationPage.fillParentStepOne(
                 firstName,
                 lastName,
-                email,
+                parentEmail,
                 password,
                 phone
         );
 
         // 🔹 Step 2 – OTP Verification (Yopmail)
-        registrationPage.verifyOtpFromYopmail(email);
+        registrationPage.verifyOtpFromYopmail(parentEmail);
 
-        // 🔹 Step 3 – Student Information
-        registrationPage.fillStudentStepThree();
+        // 🔹 Step 3 – Student Information (FIXED)
+        registrationPage.fillStudentStepThree(studentEmail);
 
         // ✅ Flow ends at Submit & Finish
+        // 🔹 Read student credentials from Yopmail
+        YopmailPage yopmailPage = new YopmailPage(driver);
+        String[] creds = yopmailPage.fetchStudentCredentials(parentEmail);
+
+// 🔹 Store for next test
+        StudentCredentialStore.username = creds[0];
+        StudentCredentialStore.password = creds[1];
+
     }
 }
