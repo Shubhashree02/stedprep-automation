@@ -1,0 +1,9 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Registration and Forgot Password">
+    <test name="Registration then ForgotPassword">
+        <classes>
+            <class name="com.stedprep.automation.tests.ParentRegistrationTest"/>
+            <class name="com.stedprep.automation.tests.ForgotPasswordTest"/>
+        </classes>
+    </test>
+</suite>

@@ -85,6 +85,17 @@ public class ForgotPasswordPage {
     private By errorMessage = 
             By.xpath("//div[contains(@class,'error') and not(contains(@class,'ant-message'))]");
 
+    // Verify OTP page (after Send Verification Code)
+    private By verifyOtpHeading = By.xpath("//h3[contains(@class,'ant-typography') and contains(.,'Verify OTP')]");
+    private By otpInputs = By.cssSelector("div.ant-flex.ant-flex-gap-small input.ant-input[maxlength='1']");
+    private By verifyCodeButton = By.xpath("//button[@type='submit']//span[text()='Verify Code']");
+
+    // Reset Password page (after Verify Code)
+    private By resetPasswordPageText = By.xpath("//p[@class='text-gray-500' and contains(.,'Create a new password for your account')]");
+    private By newPasswordInput = By.id("teacherPasswordForm_newPassword");
+    private By confirmPasswordInput = By.id("teacherPasswordForm_confirmPassword");
+    private By resetPasswordButton = By.xpath("//button[@type='submit']//span[text()='Reset Password']");
+
     // =======================
     // Actions
     // =======================
@@ -168,112 +179,20 @@ public class ForgotPasswordPage {
     }
 
     /**
-     * Click the "Send Verification Code" button and immediately catch toast message
+     * Click the "Send Verification Code" button. Returns immediately; caller should then
+     * wait for OTP page (waitForVerifyOtpPage()) and get OTP from Yopmail.
      */
     public void clickSendVerificationCode() {
         try {
             WebElement sendButton = wait.until(ExpectedConditions.elementToBeClickable(sendVerificationCodeButton));
-            
-            // Scroll into view
             js.executeScript("arguments[0].scrollIntoView({block:'center'});", sendButton);
-            try { Thread.sleep(500); } catch (InterruptedException ignored) {}
-            
-            // Wait until button is enabled
+            try { Thread.sleep(300); } catch (InterruptedException ignored) {}
             wait.until(driver -> {
                 WebElement btn = driver.findElement(sendVerificationCodeButton);
                 return btn.isEnabled() && !btn.getAttribute("class").contains("disabled");
             });
-            
-            // Set up MutationObserver BEFORE clicking to catch notification the moment it appears
-            // Store captured message in window object so we can retrieve it
-            js.executeScript(
-                "window.__capturedNotificationMsg = null; " +
-                "var observer = new MutationObserver(function(mutations) { " +
-                "  mutations.forEach(function(mutation) { " +
-                "    mutation.addedNodes.forEach(function(node) { " +
-                "      if (node.nodeType === 1) { " +
-                "        if (node.classList && node.classList.contains('ant-notification-notice')) { " +
-                "          var msgDiv = node.querySelector('div.ant-notification-notice-message'); " +
-                "          if (msgDiv && !window.__capturedNotificationMsg) { " +
-                "            window.__capturedNotificationMsg = (msgDiv.textContent || msgDiv.innerText || '').trim(); " +
-                "            observer.disconnect(); " +
-                "          } " +
-                "        } " +
-                "        var msgDivs = node.querySelectorAll('div.ant-notification-notice-message'); " +
-                "        if (msgDivs.length > 0 && !window.__capturedNotificationMsg) { " +
-                "          window.__capturedNotificationMsg = (msgDivs[0].textContent || msgDivs[0].innerText || '').trim(); " +
-                "          observer.disconnect(); " +
-                "        } " +
-                "      } " +
-                "    }); " +
-                "    if (mutation.type === 'childList' && mutation.target) { " +
-                "      var msgDivs = mutation.target.querySelectorAll('div.ant-notification-notice-message'); " +
-                "      if (msgDivs.length > 0 && !window.__capturedNotificationMsg) { " +
-                "        for (var i = 0; i < msgDivs.length; i++) { " +
-                "          var text = (msgDivs[i].textContent || msgDivs[i].innerText || '').trim(); " +
-                "          if (text.length > 0) { " +
-                "            window.__capturedNotificationMsg = text; " +
-                "            observer.disconnect(); " +
-                "            break; " +
-                "          } " +
-                "        } " +
-                "      } " +
-                "    } " +
-                "  }); " +
-                "}); " +
-                "observer.observe(document.body, { childList: true, subtree: true, attributes: false }); " +
-                "observer.observe(document.documentElement, { childList: true, subtree: true, attributes: false }); " +
-                "window.__notificationObserver = observer;"
-            );
-            
-            // Now click the button
             js.executeScript("arguments[0].click();", sendButton);
-            
-            // Immediate check (no delay) - notification might appear instantly
-            try {
-                String immediateCheck = (String) js.executeScript(
-                    "var msgDivs = document.querySelectorAll('div.ant-notification-notice-message'); " +
-                    "for (var i = 0; i < msgDivs.length; i++) { " +
-                    "  var text = (msgDivs[i].textContent || msgDivs[i].innerText || '').trim(); " +
-                    "  if (text.length > 0) { return text; } " +
-                    "} " +
-                    "return null;"
-                );
-                if (immediateCheck != null && !immediateCheck.isEmpty()) {
-                    js.executeScript("if (window.__notificationObserver) { window.__notificationObserver.disconnect(); window.__notificationObserver = null; }");
-                    System.out.println("📢 Notification Message (Immediate): " + immediateCheck);
-                    return;
-                }
-            } catch (Exception e) {
-                // Continue to polling
-            }
-            
-            // Poll for the captured message (check every 5ms) - wait up to 10 seconds
-            for (int i = 0; i < 2000; i++) { // 2000 attempts * 5ms = 10 seconds
-                try {
-                    String capturedMessage = (String) js.executeScript("return window.__capturedNotificationMsg;");
-                    if (capturedMessage != null && !capturedMessage.isEmpty()) {
-                        // Clean up observer
-                        js.executeScript("if (window.__notificationObserver) { window.__notificationObserver.disconnect(); window.__notificationObserver = null; }");
-                        System.out.println("📢 Notification Message (MutationObserver): " + capturedMessage);
-                        return;
-                    }
-                } catch (Exception e) {
-                    // Continue
-                }
-                try { Thread.sleep(5); } catch (InterruptedException ignored) {}
-            }
-            
-            // Clean up observer
-            js.executeScript("if (window.__notificationObserver) { window.__notificationObserver.disconnect(); window.__notificationObserver = null; }");
-            
-            // Fallback: Check immediately with NO delay - notification appears and disappears very quickly
-            String toastMessage = captureToastImmediately();
-            if (toastMessage != null && !toastMessage.isEmpty()) {
-                // Message is already printed
-                return;
-            }
-            
+            System.out.println("✅ Clicked Send Verification Code");
         } catch (TimeoutException e) {
             throw new RuntimeException("❌ Send Verification Code button not found or not clickable", e);
         }
@@ -589,5 +508,99 @@ public class ForgotPasswordPage {
         }
         
         return false;
+    }
+
+    /** Wait until the Verify OTP page is visible (heading "Verify OTP"). */
+    public void waitForVerifyOtpPage() {
+        wait.until(ExpectedConditions.visibilityOfElementLocated(verifyOtpHeading));
+        System.out.println("✅ Verify OTP page loaded");
+    }
+
+    /** Enter the 6-digit OTP into the six single-digit inputs. */
+    public void enterOtp(String otp) {
+        if (otp == null || otp.length() != 6) {
+            throw new IllegalArgumentException("OTP must be 6 digits");
+        }
+        java.util.List<WebElement> inputs = wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(otpInputs));
+        if (inputs.size() < 6) {
+            throw new RuntimeException("Expected 6 OTP inputs, found " + inputs.size());
+        }
+        for (int i = 0; i < 6; i++) {
+            inputs.get(i).clear();
+            inputs.get(i).sendKeys(String.valueOf(otp.charAt(i)));
+        }
+        System.out.println("✅ Entered OTP");
+    }
+
+    /** Click the Verify Code button. */
+    public void clickVerifyCode() {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(verifyCodeButton));
+        try {
+            btn.click();
+        } catch (ElementClickInterceptedException e) {
+            js.executeScript("arguments[0].click();", btn);
+        }
+        System.out.println("✅ Clicked Verify Code");
+    }
+
+    /** Wait until the Reset Password page is visible (text "Create a new password for your account"). */
+    public void waitForResetPasswordPage() {
+        wait.until(ExpectedConditions.visibilityOfElementLocated(resetPasswordPageText));
+        System.out.println("✅ Reset Password page loaded");
+    }
+
+    /** Enter new password in the Reset Password form. */
+    public void enterNewPassword(String password) {
+        WebElement field = wait.until(ExpectedConditions.visibilityOfElementLocated(newPasswordInput));
+        field.clear();
+        field.sendKeys(password);
+        System.out.println("✅ Entered new password");
+    }
+
+    /** Enter confirm password in the Reset Password form. */
+    public void enterConfirmPassword(String password) {
+        WebElement field = wait.until(ExpectedConditions.visibilityOfElementLocated(confirmPasswordInput));
+        field.clear();
+        field.sendKeys(password);
+        System.out.println("✅ Entered confirm password");
+    }
+
+    /** Click the Reset Password button. */
+    public void clickResetPassword() {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(resetPasswordButton));
+        try {
+            btn.click();
+        } catch (ElementClickInterceptedException e) {
+            js.executeScript("arguments[0].click();", btn);
+        }
+        System.out.println("✅ Clicked Reset Password");
+    }
+
+    /** If a success message appears after reset, capture and print it. Otherwise do nothing. */
+    public void printSuccessMessageIfPresent() {
+        try {
+            java.util.List<WebElement> success = driver.findElements(successNotification);
+            for (WebElement el : success) {
+                if (el.isDisplayed()) {
+                    String msg = el.getText();
+                    if (msg != null && !msg.trim().isEmpty()) {
+                        System.out.println("📢 Success: " + msg.trim());
+                        return;
+                    }
+                }
+            }
+            java.util.List<WebElement> toasts = driver.findElements(successToastMessage);
+            for (WebElement el : toasts) {
+                if (el.isDisplayed()) {
+                    String msg = el.getText();
+                    if (msg != null && !msg.trim().isEmpty()) {
+                        System.out.println("📢 Success: " + msg.trim());
+                        return;
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // No success message is ok
+        }
     }
 }
