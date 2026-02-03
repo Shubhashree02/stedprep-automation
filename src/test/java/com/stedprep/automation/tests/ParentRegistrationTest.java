@@ -6,6 +6,7 @@ import com.stedprep.automation.utils.TestDataUtils;
 import org.testng.annotations.Test;
 import com.stedprep.automation.pages.YopmailPage;
 import com.stedprep.automation.utils.StudentCredentialStore;
+import com.stedprep.automation.utils.ParentCredentialStore;
 
 
 public class ParentRegistrationTest extends BaseTest {
@@ -45,6 +46,12 @@ public class ParentRegistrationTest extends BaseTest {
         registrationPage.fillStudentStepThree(studentEmail);
 
         // ✅ Flow ends at Submit & Finish
+        // ⏳ Additional wait before proceeding to Yopmail (ensures submission is fully processed)
+        System.out.println("⏳ Waiting before fetching credentials from Yopmail...");
+        try {
+            Thread.sleep(2000); // Additional 2 seconds wait
+        } catch (InterruptedException ignored) {}
+        
         // 🔹 Read student credentials from Yopmail
         YopmailPage yopmailPage = new YopmailPage(driver);
         String[] creds = yopmailPage.fetchStudentCredentials(parentEmail);
@@ -52,6 +59,10 @@ public class ParentRegistrationTest extends BaseTest {
 // 🔹 Store for next test
         StudentCredentialStore.username = creds[0];
         StudentCredentialStore.password = creds[1];
+        
+        // 🔹 Store parent credentials for forgot password test
+        ParentCredentialStore.email = parentEmail;
+        ParentCredentialStore.password = password;
 
     }
 }
