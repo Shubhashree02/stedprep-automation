@@ -32,9 +32,13 @@ public class ForgotPasswordTest extends BaseTest {
         forgotPasswordPage.clickVerifyCode();
 
         forgotPasswordPage.waitForResetPasswordPage();
-        forgotPasswordPage.enterNewPassword("Admin@123");
-        forgotPasswordPage.enterConfirmPassword("Admin@123");
+        String newPassword = "Admin@123";
+        forgotPasswordPage.enterNewPassword(newPassword);
+        forgotPasswordPage.enterConfirmPassword(newPassword);
         forgotPasswordPage.clickResetPassword();
         forgotPasswordPage.printSuccessMessageIfPresent();
+
+        ParentCredentialStore.password = newPassword;
+        System.out.println("✅ Stored new parent password for later use (e.g. parent login)");
     }
 }

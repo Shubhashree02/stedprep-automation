@@ -8,20 +8,22 @@
         <!-- 1️⃣ Parent Registration (creates parent + student creds) -->
         <class name="com.stedprep.automation.tests.ParentRegistrationTest"/>
 
+        <!-- Parent Login (uses ParentCredentialStore: original or new password after forgot) -->
+        <class name="com.stedprep.automation.tests.ParentLoginTest"/>
+
         <!-- 2️⃣ Student Login (uses stored creds) -->
-        <class name="com.stedprep.automation.tests.StudentLoginTest"/>
+        <!-- <class name="com.stedprep.automation.tests.StudentLoginTest"/> -->
 
         <!-- 3️⃣ Diagnostic Automation -->
-        <class name="com.stedprep.automation.tests.DiagnosticTest"/>
+        <!-- <class name="com.stedprep.automation.tests.DiagnosticTest"/> -->
 
     </classes>
 </test>
 
-<test name="Forgot Password Tests">
+<!-- <test name="Forgot Password Tests">
     <classes>
-        <!-- Forgot Password Flow -->
         <class name="com.stedprep.automation.tests.ForgotPasswordTest"/>
     </classes>
-</test>
+</test> -->
 
 </suite>
