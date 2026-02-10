@@ -1,12 +1,20 @@
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
 <suite name="StedPrep Full Flow Suite">
 
-<test name="Full Flow Tests">
-    <classes>
-        <class name="com.stedprep.automation.tests.ParentRegistrationTest"/>
-        <class name="com.stedprep.automation.tests.StudentLoginTest"/>
-        <class name="com.stedprep.automation.tests.DiagnosticTest"/>
-    </classes>
-</test>
+    <test name="Full Flow Tests">
+        <classes>
+            <!-- 1️⃣ Parent Registration (creates parent + student creds) -->
+            <class name="com.stedprep.automation.tests.ParentRegistrationTest"/>
+
+            <!-- 2️⃣ Student Login (uses stored student creds) -->
+            <class name="com.stedprep.automation.tests.StudentLoginTest"/>
+
+            <!-- 3️⃣ Forgot Password (updates parent password in ParentCredentialStore) -->
+            <class name="com.stedprep.automation.tests.ForgotPasswordTest"/>
+
+            <!-- 4️⃣ Parent Login (uses ParentCredentialStore.email + password) -->
+            <class name="com.stedprep.automation.tests.ParentLoginTest"/>
+        </classes>
+    </test>
 
 </suite>
